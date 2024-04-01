@@ -6,7 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
-
+#include "sysinfo.h"
 uint64
 sys_exit(void)
 {
@@ -94,4 +94,42 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+// a sys_trace() function which remembers its argument 
+// in a new variable in proc structure
+uint64
+sys_trace(void)
+{
+  int _trace_mask;
+  struct proc *p = myproc();
+  if (argint(0, &_trace_mask) <0)
+    return -1;
+  p->trace_mask |= _trace_mask;
+  return 0;
+}
+
+// a sys_sysinfo() function which collects information 
+// about the runing system.
+// Take one arguement: a pointer to a struct sysinfo.
+// The function fill out the fields of this struct:
+//      freemem: the number of bytes of free memory
+//      nproc: the number of processes whose state is not UNUSED
+uint64
+sys_sysinfo(void)
+{
+  uint64 addr;
+  struct sysinfo _sysinfo;
+  struct proc *p = myproc();
+
+  if (argaddr(0, &addr) < 0) {
+    return -1;
+  }
+  _sysinfo.freemem = c_freemem();
+  _sysinfo.nproc = c_proc_notUNUSED();
+
+  if (copyout(p->pagetable, addr, (char *)&_sysinfo, sizeof(_sysinfo)) < 0) {
+    return -1;
+  }
+  return 0;
 }
