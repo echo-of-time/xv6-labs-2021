@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     }
 
     // The first process feeds the numbers 2 through 35 into the pipeline.
-    int pipeline[2]; 
+    int pipeline[2];
     pipe(pipeline);
     for (int i = 2; i < 36; i++)
     {
@@ -24,18 +24,24 @@ int main(int argc, char *argv[])
     //     n = get a number from left neighbor
     //     if (p does not divide n)
     //         send n to right neighbor
-    
+
     int p, n;
-    while (read(pipeline[0], &p, sizeof(int)) > 0)
-    {
-        printf("prime: %d\n", p);
-        while (read(pipeline[0], &n, sizeof(int)) > 0)
-        {
-            if (n % p != 0)
-            {
-                write(pipeline[1], &n, sizeof(int));
+    read(pipeline[0], &p, sizeof(int));
+    printf("prime: %d\n", p);
+    while (read(pipeline[0], &n, sizeof(int)) > 0) {
+        if (n % p != 0) {
+            write(pipeline[1], &n, sizeof(int));
+            int pid = fork();
+            if (pid == 0) {
+                // child
+                read(pipeline[0], &p, sizeof(int));
+                printf("prime: %d\n", p);
+            }else {
+                // parent
+                wait(0);
             }
         }
     }
+    
     exit(0);
 }
