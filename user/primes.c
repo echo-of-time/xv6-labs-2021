@@ -24,7 +24,6 @@ void primes(int pipe_left){
         close(pipe_right[1]);
         primes(pipe_right[0]);
         close(pipe_right[0]);
-        exit(0);
     } else if (forkPID > 0) {
         // p = get a number from left neighbor
         // print p
@@ -43,7 +42,6 @@ void primes(int pipe_left){
         }
         close(pipe_right[1]);
         wait(0);
-        exit(0);
     }
     
 }
@@ -66,12 +64,10 @@ int main(int argc, char *argv[])
         close(pipe_left[1]);
         primes(pipe_left[0]);
         close(pipe_left[0]);
-        exit(0);
     } else if (forkPID > 0) {
         close(pipe_left[0]);
         close(pipe_left[1]); 
         wait(0);
-        exit(0);
     } else {
         fprintf(2, "fork : error!\n");
         exit(1);
