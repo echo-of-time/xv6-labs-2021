@@ -2,76 +2,75 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-void primes(int fd){
-    // p = get a number from left neighbor
-    // print p
-    // loop:
-    //     n = get a number from left neighbor
-    //     if (p does not divide n)
-    //         send n to right neighbor
+#define MAXSIZE 35
 
-    int pipeline[2];
-    pipe(pipeline);
+/*pipe left or right is coresponding to this parent process*/
+void primes(int pipe_left){
+    int pipe_right[2];
+    pipe(pipe_right);
 
-    int left_num;
-    read(fd, &left_num, sizeof(int));
-    printf("primes: %d\n", left_num);
-    int pid = fork();
-    if (pid == 0) {
-        primes(pipeline[1]);
-    } else if (pid > 0){
-        int n;
-        read(pipeline[0], &n, sizeof(int));
-        close(pipeline[0]);
-        if (n % left_num != 0) {
-            write(pipeline[1], &n, sizeof(int));
+    int forkPID = fork();
+    if (forkPID == 0) {
+        close(pipe_right[1]);
+        primes(pipe_right[0]);
+        close(pipe_right[0]);
+    } else if (forkPID > 0) {
+        // p = get a number from left neighbor
+        // print p
+        // loop:
+        //     n = get a number from left neighbor
+        //     if (p does not divide n)
+        //         send n to right neighbor
+        close(pipe_right[0]);
+
+        // print first prime
+        int first_num_from_left;
+        int readFLAG = read(pipe_left, &first_num_from_left, sizeof(int)); 
+        // if readFLAG = 0, then no data ****KEY FOR END RECURSION****
+        if (!readFLAG) {
+            return;
+        } else {
+            printf("prime %d\n", first_num_from_left);
         }
-        close(pipeline[1]);
-        wait((int*)pid);
+
+        // deal with other num
+        int other_num_from_left;
+        while (read(pipe_left, &other_num_from_left, sizeof(int)) > 0) {
+            if (other_num_from_left % first_num_from_left != 0) {
+                write(pipe_right[1], &other_num_from_left, sizeof(int));
+            }
+        }
+        close(pipe_right[1]);
+        wait(0);
     }
+    
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc != 1)
-    {
+    if (argc != 1) {
         fprintf(2, "Invalid argument(s) for primes!\nprimes: no need for any argument.\n");
         exit(1);
     }
 
-    // The first process feeds the numbers 2 through 35 into the pipeline.
-    int pipeline[2];
-    pipe(pipeline);
-    for (int i = 2; i < 36; i++)
-    {
-        write(pipeline[1], &i, sizeof(int));
+    // The first process feeds the numbers 2 through 35 into the pipe_left.
+    int pipe_left[2];
+    pipe(pipe_left);
+    for (int i = 2; i < MAXSIZE+1; i++) {
+        write(pipe_left[1], &i, sizeof(int));
     }
-    close(pipeline[1]);
-    primes(pipeline[0]);
-    close(pipeline[0]);
-
-    int p, n;
-    read(pipeline[0], &p, sizeof(int));
-    printf("prime: %d\n", p);
-    while (read(pipeline[0], &n, sizeof(int)) > 0)
-    {
-        if (n % p != 0)
-        {
-            write(pipeline[1], &n, sizeof(int));
-            int pid = fork();
-            if (pid == 0)
-            {
-                // child
-                read(pipeline[0], &p, sizeof(int));
-                printf("prime: %d\n", p);
-            }
-            else
-            {
-                // parent
-                wait(0);
-            }
-        }
+    int forkPID = fork();
+    if (forkPID == 0) {
+        close(pipe_left[1]);
+        primes(pipe_left[0]);
+        close(pipe_left[0]);
+    } else if (forkPID > 0) {
+        close(pipe_left[0]);
+        wait(0);
+        close(pipe_left[1]);
+    } else {
+        fprintf(2, "fork : error!\n");
+        exit(1);
     }
-
     exit(0);
 }
