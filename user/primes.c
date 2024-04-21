@@ -8,6 +8,16 @@
 void primes(int pipe_left){
     int pipe_right[2];
     pipe(pipe_right);
+    
+    // print first prime
+    int first_num_from_left;
+    int readFLAG = read(pipe_left, &first_num_from_left, sizeof(int)); 
+    // if readFLAG = 0, then no data ****KEY FOR END RECURSION****
+    if (!readFLAG) {
+        return;
+    } else {
+        printf("prime %d\n", first_num_from_left);
+    }
 
     int forkPID = fork();
     if (forkPID == 0) {
@@ -23,15 +33,7 @@ void primes(int pipe_left){
         //         send n to right neighbor
         close(pipe_right[0]);
 
-        // print first prime
-        int first_num_from_left;
-        int readFLAG = read(pipe_left, &first_num_from_left, sizeof(int)); 
-        // if readFLAG = 0, then no data ****KEY FOR END RECURSION****
-        if (!readFLAG) {
-            return;
-        } else {
-            printf("prime %d\n", first_num_from_left);
-        }
+        
 
         // deal with other num
         int other_num_from_left;
