@@ -15,7 +15,6 @@ void primes(int fd){
 
     int left_num;
     read(fd, &left_num, sizeof(int));
-    close(fd);
     printf("primes: %d\n", left_num);
     int pid = fork();
     if (pid == 0) {
@@ -28,6 +27,7 @@ void primes(int fd){
             write(pipeline[1], &n, sizeof(int));
         }
         close(pipeline[1]);
+        wait((int*)pid);
     }
 }
 
